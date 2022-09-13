@@ -59,7 +59,7 @@ namespace MetaFrm.Config
                 Api.Models.Attribute value = this.Attribute[namespaceName].Attribute.Single(x => x.AttributeName == attributeName);
 
                 if (value != null && value.AttributeValue != null && value.AttributeValue != "")
-                    return value.IsEncrypt ? value.AttributeValue.AesDecryptorToBase64String("MetaFrm", Factory.AccessKey) : value.AttributeValue;
+                    return value.IsEncrypt ? value.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : value.AttributeValue;
                 else
                     return "";
             }
