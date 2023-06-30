@@ -99,7 +99,8 @@ namespace MetaFrm.Config
                         }
                     }
                 }
-                catch (HttpRequestException)
+                //catch (HttpRequestException)
+                catch (Exception)
                 {
                     httpClientException = true;
                     if (!this.Attribute.ContainsKey(namespaceName))
