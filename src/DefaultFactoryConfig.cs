@@ -89,10 +89,8 @@ namespace MetaFrm.Config
 
                     if (response.IsSuccessStatusCode)
                     {
-                        var json = response.Content.ReadAsStringAsync().Result;
-
                         AssemblyAttribute? assemblyAttribute;
-                        assemblyAttribute = System.Text.Json.JsonSerializer.Deserialize<AssemblyAttribute>(json);
+                        assemblyAttribute = response.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
 
                         if (assemblyAttribute != null && !this.Attribute.ContainsKey(namespaceName))
                         {
