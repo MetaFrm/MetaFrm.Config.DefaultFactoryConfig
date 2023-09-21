@@ -1,8 +1,6 @@
 ﻿using MetaFrm.Api.Models;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json;
 
 namespace MetaFrm.Config
 {
@@ -91,9 +89,10 @@ namespace MetaFrm.Config
 
                     if (response.IsSuccessStatusCode)
                     {
-                        var options = new JsonSerializerOptions() { Converters = { new JsonStringEnumConverter() }, PropertyNameCaseInsensitive = true };
+                        var json = response.Content.ReadAsStringAsync().Result;
+
                         AssemblyAttribute? assemblyAttribute;
-                        assemblyAttribute = response.Content.ReadFromJsonAsync<AssemblyAttribute>(options).Result;
+                        assemblyAttribute = System.Text.Json.JsonSerializer.Deserialize<AssemblyAttribute>(json);
 
                         if (assemblyAttribute != null && !this.Attribute.ContainsKey(namespaceName))
                         {
