@@ -114,10 +114,10 @@ namespace MetaFrm.Config
 
             if (this.Attribute.ContainsKey(namespaceName))
             {
-                string? value = this.Attribute[namespaceName].Attribute.Single(x => x.AttributeName == attributeName).AttributeValue;
+                Api.Models.Attribute value = this.Attribute[namespaceName].Attribute.Single(x => x.AttributeName == attributeName);
 
-                if (value != null)
-                    return value;
+                if (value != null && value.AttributeValue != null && value.AttributeValue != "")
+                    return value.IsEncrypt ? value.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : value.AttributeValue;
                 else
                     return "";
             }
