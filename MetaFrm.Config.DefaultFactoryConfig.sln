@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetaFrm.Config.DefaultFactoryConfig(net6.0)", "MetaFrm.Config.DefaultFactoryConfig(net6.0)\MetaFrm.Config.DefaultFactoryConfig(net6.0).csproj", "{0EE5C575-841D-46EF-BB70-23A7F6C01862}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BAEC61E1-A630-44DB-BF03-79AD0A2A07C9}"
 	ProjectSection(SolutionItems) = preProject
 		src\DefaultFactoryConfig.cs = src\DefaultFactoryConfig.cs
@@ -14,9 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{8488
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{417C4837-3C9C-42AD-B4E5-0DBDBB31CCB4}"
 	ProjectSection(SolutionItems) = preProject
-		.github\workflows\build_6.0.yml = .github\workflows\build_6.0.yml
-		.github\workflows\build_7.0.yml = .github\workflows\build_7.0.yml
 		.github\workflows\build_8.0.yml = .github\workflows\build_8.0.yml
+		.github\workflows\build_9.0.yml = .github\workflows\build_9.0.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "솔루션 항목", "솔루션 항목", "{2C7A2EDB-1186-4A07-83F3-678CF744DCB1}"
@@ -26,9 +23,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "솔루션 항목", "솔루�
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetaFrm.Config.DefaultFactoryConfig(net7.0)", "MetaFrm.Config.DefaultFactoryConfig(net7.0)\MetaFrm.Config.DefaultFactoryConfig(net7.0).csproj", "{A6C74254-1EAD-4EA1-928F-0C59507DE46E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MetaFrm.Config.DefaultFactoryConfig(net8.0)", "MetaFrm.Config.DefaultFactoryConfig(net8.0)\MetaFrm.Config.DefaultFactoryConfig(net8.0).csproj", "{9EC60CF2-F1C6-4785-A8EF-A8B65FEEA941}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MetaFrm.Config.DefaultFactoryConfig(net9.0)", "MetaFrm.Config.DefaultFactoryConfig(net9.0)\MetaFrm.Config.DefaultFactoryConfig(net9.0).csproj", "{9164DBEE-881E-41E0-8707-84703085FEE5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,18 +33,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0EE5C575-841D-46EF-BB70-23A7F6C01862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0EE5C575-841D-46EF-BB70-23A7F6C01862}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0EE5C575-841D-46EF-BB70-23A7F6C01862}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0EE5C575-841D-46EF-BB70-23A7F6C01862}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A6C74254-1EAD-4EA1-928F-0C59507DE46E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A6C74254-1EAD-4EA1-928F-0C59507DE46E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A6C74254-1EAD-4EA1-928F-0C59507DE46E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A6C74254-1EAD-4EA1-928F-0C59507DE46E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9EC60CF2-F1C6-4785-A8EF-A8B65FEEA941}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9EC60CF2-F1C6-4785-A8EF-A8B65FEEA941}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EC60CF2-F1C6-4785-A8EF-A8B65FEEA941}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EC60CF2-F1C6-4785-A8EF-A8B65FEEA941}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9164DBEE-881E-41E0-8707-84703085FEE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9164DBEE-881E-41E0-8707-84703085FEE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9164DBEE-881E-41E0-8707-84703085FEE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9164DBEE-881E-41E0-8707-84703085FEE5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
