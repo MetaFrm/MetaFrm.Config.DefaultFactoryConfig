@@ -12,7 +12,7 @@ namespace MetaFrm.Config
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
-        private Dictionary<string, AssemblyAttribute> Attribute { get; set; } = new();
+        private Dictionary<string, AssemblyAttribute> Attribute { get; set; } = [];
 
         /// <summary>
         /// DefaultFactoryConfig 인스턴스를 생성합니다.
@@ -46,7 +46,7 @@ namespace MetaFrm.Config
 
         List<string> IFactoryConfig.GetAttribute(ICore core, List<string> listAttributeName)
         {
-            List<string> vs = new();
+            List<string> vs = [];
 
             foreach (var attribute in listAttributeName)
                 vs.Add((this as IFactoryConfig).GetAttribute(core, attribute));
@@ -55,7 +55,7 @@ namespace MetaFrm.Config
         }
         async Task<List<string>> IFactoryConfig.GetAttributeAsync(ICore core, List<string> listAttributeName)
         {
-            List<string> vs = new();
+            List<string> vs = [];
 
             foreach (var attribute in listAttributeName)
                 vs.Add(await (this as IFactoryConfig).GetAttributeAsync(core, attribute));
@@ -66,7 +66,7 @@ namespace MetaFrm.Config
 
         List<string> IFactoryConfig.GetAttribute<T>(ICore core, List<string> listAttributeName)
         {
-            List<string> vs = new();
+            List<string> vs = [];
 
             foreach (var attribute in listAttributeName)
                 vs.Add((this as IFactoryConfig).GetAttribute<T>(core, attribute));
@@ -75,7 +75,7 @@ namespace MetaFrm.Config
         }
         async Task<List<string>> IFactoryConfig.GetAttributeAsync<T>(ICore core, List<string> listAttributeName)
         {
-            List<string> vs = new();
+            List<string> vs = [];
 
             foreach (var attribute in listAttributeName)
                 vs.Add(await (this as IFactoryConfig).GetAttributeAsync<T>(core, attribute));
@@ -166,7 +166,7 @@ namespace MetaFrm.Config
                     if (assemblyAttribute != null && !this.Attribute.ContainsKey(namespaceName))
                     {
                         this.Attribute.Add(namespaceName, assemblyAttribute);
-                        Factory.SaveInstance(assemblyAttribute, path);
+                        Factory.SaveInstanceAsync(assemblyAttribute, path);
 
                         return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
                     }
@@ -175,7 +175,7 @@ namespace MetaFrm.Config
             catch (Exception)
             {
                 if (!this.Attribute.TryGetValue(namespaceName, out _))
-                    this.Attribute.Add(namespaceName, Factory.LoadInstance<AssemblyAttribute>(path));
+                    this.Attribute.Add(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path));
             }
 
             return "";
