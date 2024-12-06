@@ -1,5 +1,7 @@
 ﻿using MetaFrm.Api.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using System.Collections.Concurrent;
 using System.Net.Http.Json;
 
 namespace MetaFrm.Config
@@ -12,7 +14,7 @@ namespace MetaFrm.Config
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
-        private Dictionary<string, AssemblyAttribute> Attribute { get; set; } = [];
+        private ConcurrentDictionary<string, AssemblyAttribute> Attribute { get; set; } = [];
 
         /// <summary>
         /// DefaultFactoryConfig 인스턴스를 생성합니다.
@@ -115,19 +117,22 @@ namespace MetaFrm.Config
                     AssemblyAttribute? assemblyAttribute;
                     assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
 
-                    if (assemblyAttribute != null && !this.Attribute.ContainsKey(namespaceName))
+                    if (assemblyAttribute != null)
                     {
-                        this.Attribute.Add(namespaceName, assemblyAttribute);
+                        if (!this.Attribute.TryAdd(namespaceName, assemblyAttribute))
+                            Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
                         Factory.SaveInstance(assemblyAttribute, path);
 
                         return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                if (!this.Attribute.TryGetValue(namespaceName, out _))
-                    this.Attribute.Add(namespaceName, Factory.LoadInstance<AssemblyAttribute>(path));
+                Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception : {namespaceName}", namespaceName);
+                if (!this.Attribute.TryAdd(namespaceName, Factory.LoadInstance<AssemblyAttribute>(path)))
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception TryAdd Fail : {namespaceName}", namespaceName);
             }
 
             return "";
@@ -163,19 +168,22 @@ namespace MetaFrm.Config
                     AssemblyAttribute? assemblyAttribute;
                     assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
 
-                    if (assemblyAttribute != null && !this.Attribute.ContainsKey(namespaceName))
+                    if (assemblyAttribute != null)
                     {
-                        this.Attribute.Add(namespaceName, assemblyAttribute);
+                        if (!this.Attribute.TryAdd(namespaceName, assemblyAttribute))
+                            Factory.Logger.LogError("IFactoryConfig.GetAttributeAsync Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
                         Factory.SaveInstanceAsync(assemblyAttribute, path);
 
                         return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                if (!this.Attribute.TryGetValue(namespaceName, out _))
-                    this.Attribute.Add(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path));
+                Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception : {namespaceName}", namespaceName);
+                if (!this.Attribute.TryAdd(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path)))
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception TryAdd Fail : {namespaceName}", namespaceName);
             }
 
             return "";
