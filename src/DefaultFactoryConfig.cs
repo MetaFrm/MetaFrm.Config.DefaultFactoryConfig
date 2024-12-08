@@ -92,7 +92,7 @@ namespace MetaFrm.Config
 
             if (this.Attribute.TryGetValue(namespaceName, out AssemblyAttribute? value1))
             {
-                Api.Models.Attribute? attribute = value1.Attribute.Single(x => x.AttributeName == attributeName);
+                Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
 
                 if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
                     return attribute.IsEncrypt ? attribute.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
@@ -143,7 +143,7 @@ namespace MetaFrm.Config
 
             if (this.Attribute.TryGetValue(namespaceName, out AssemblyAttribute? value1))
             {
-                Api.Models.Attribute? attribute = value1.Attribute.Single(x => x.AttributeName == attributeName);
+                Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
 
                 if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
                     return attribute.IsEncrypt ? await attribute.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
