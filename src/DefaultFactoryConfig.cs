@@ -89,7 +89,7 @@ namespace MetaFrm.Config
 
         string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
         {
-            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase?.ProjectID}_{Factory.ProjectServiceBase?.ServiceID}_C_{namespaceName}_Attribute.dat");
+            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
 
             try
             {
@@ -143,7 +143,7 @@ namespace MetaFrm.Config
         }
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
         {
-            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase?.ProjectID}_{Factory.ProjectServiceBase?.ServiceID}_C_{namespaceName}_Attribute.dat");
+            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
 
             try
             {
