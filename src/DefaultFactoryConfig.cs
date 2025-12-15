@@ -11,7 +11,7 @@ namespace MetaFrm.Config
     /// </summary>
     public class DefaultFactoryConfig : IFactoryConfig
     {
-        static readonly object lockObject = new();
+        static readonly Lock lockObject = new();
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
@@ -177,7 +177,7 @@ namespace MetaFrm.Config
                         if (!this.Attribute.TryAdd(namespaceName, assemblyAttribute))
                             Factory.Logger.LogError("IFactoryConfig.GetAttributeAsync Attribute TryAdd Fail : {namespaceName}", namespaceName);
 
-                        Factory.SaveInstanceAsync(assemblyAttribute, path);
+                        await Factory.SaveInstanceAsync(assemblyAttribute, path);
 
                         return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
                     }
