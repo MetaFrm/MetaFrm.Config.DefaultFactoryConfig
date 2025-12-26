@@ -123,10 +123,10 @@ namespace MetaFrm.Config
                 {
                     AssemblyAttribute? assemblyAttribute;
 
-                    if (isResult)
-                        assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
-                    else
-                        assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
+                    //if (isResult)
+                    //    assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
+                    //else
+                    assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
 
                     if (assemblyAttribute != null)
                     {
