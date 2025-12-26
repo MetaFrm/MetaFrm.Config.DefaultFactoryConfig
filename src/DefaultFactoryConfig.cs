@@ -100,10 +100,31 @@ namespace MetaFrm.Config
                                 return "";
                         }
 
-                        AssemblyAttribute? assemblyAttribute = this.LoadAssemblyAttributeAsync(namespaceName).Result;
+                        HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
+                        {
+                            Headers = {
+                        { HeaderNames.Accept, "text/plain" },
+                        { "token", Factory.ProjectService.Token },
+                    }
+                        };
 
-                        if (assemblyAttribute != null)
-                            return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
+                        HttpResponseMessage httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
+
+                        if (httpResponseMessage.IsSuccessStatusCode)
+                        {
+                            AssemblyAttribute? assemblyAttribute;
+                            assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
+
+                            if (assemblyAttribute != null)
+                            {
+                                if (!this._cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
+                                    Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
+                                Factory.SaveInstance(assemblyAttribute, path);
+
+                                return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
+                            }
+                        }
 
                         this._isFirst = false;
                     }
@@ -140,29 +161,7 @@ namespace MetaFrm.Config
                         return "";
                 }
 
-                AssemblyAttribute? assemblyAttribute = await this.LoadAssemblyAttributeAsync(namespaceName);
-
-                if (assemblyAttribute != null)
-                    return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
-            }
-            catch (Exception ex)
-            {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception : {namespaceName}", namespaceName);
-            }
-
-            return "";
-        }
-
-
-        private async Task<AssemblyAttribute?> LoadAssemblyAttributeAsync(string namespaceName)
-        {
-            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
-
-            //API 시도
-            try
-            {
-                using HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
+                HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
                 {
                     Headers = {
                         { HeaderNames.Accept, "text/plain" },
@@ -184,33 +183,20 @@ namespace MetaFrm.Config
 
                         await Factory.SaveInstanceAsync(assemblyAttribute, path);
 
-                        return assemblyAttribute;
+                        return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
                     }
                 }
             }
             catch (Exception ex)
             {
                 if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig API load failed: {namespaceName}", namespaceName);
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception : {namespaceName}", namespaceName);
+
+                if (!this._cache.TryAdd(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path)) && Factory.Logger.IsEnabled(LogLevel.Error))
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception TryAdd Fail : {namespaceName}", namespaceName);
             }
 
-            //File fallback
-            try
-            {
-                AssemblyAttribute assemblyAttribute = Factory.LoadInstance<AssemblyAttribute>(path);
-
-                if (!this._cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError("IFactoryConfig.GetAttribute Exception TryAdd Fail : {namespaceName}", namespaceName);
-
-                return assemblyAttribute;
-            }
-            catch (Exception ex)
-            {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig file load failed: {namespaceName}", namespaceName);
-            }
-
-            return null;
+            return "";
         }
 
         string IFactoryConfig.GetPath(string namespaceName)
