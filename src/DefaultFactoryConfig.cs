@@ -89,8 +89,57 @@ namespace MetaFrm.Config
 
         string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
         {
-            lock (lockObject)
-                return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
+            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
+
+            try
+            {
+                lock (lockObject)
+                {
+                    if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
+                    {
+                        Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
+
+                        if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
+                            return attribute.IsEncrypt ? attribute.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
+                        else
+                            return "";
+                    }
+
+                    HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
+                    {
+                        Headers = {
+                        { HeaderNames.Accept, "text/plain" },
+                        { "token", Factory.ProjectService.Token },
+                    }
+                    };
+
+                    HttpResponseMessage httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
+
+                    if (httpResponseMessage.IsSuccessStatusCode)
+                    {
+                        AssemblyAttribute? assemblyAttribute;
+                        assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
+
+                        if (assemblyAttribute != null)
+                        {
+                            if (!this._cache.TryAdd(namespaceName, assemblyAttribute))
+                                Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
+                            Factory.SaveInstance(assemblyAttribute, path);
+
+                            return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception : {namespaceName}", namespaceName);
+                if (!this._cache.TryAdd(namespaceName, Factory.LoadInstance<AssemblyAttribute>(path)))
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception TryAdd Fail : {namespaceName}", namespaceName);
+            }
+
+            return "";
         }
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
         {
