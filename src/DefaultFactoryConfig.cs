@@ -114,10 +114,10 @@ namespace MetaFrm.Config
 
                 HttpResponseMessage httpResponseMessage;
 
-                if (isResult)
-                    httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
-                else
-                    httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
+                //if (isResult)
+                //    httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
+                //else
+                httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
 
                 if (httpResponseMessage.IsSuccessStatusCode)
                 {
