@@ -100,7 +100,7 @@ namespace MetaFrm.Config
                                 return "";
                         }
 
-                        AssemblyAttribute? assemblyAttribute = this.LoadAssemblyAttributeAsync(namespaceName).GetAwaiter().GetResult();
+                        AssemblyAttribute? assemblyAttribute = this.LoadAssemblyAttributeAsync(namespaceName).Result;
 
                         if (assemblyAttribute != null)
                             return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
