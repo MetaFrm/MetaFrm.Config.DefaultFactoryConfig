@@ -80,72 +80,15 @@ namespace MetaFrm.Config
             return vs;
         }
 
-        private bool _isFirst = true;
         string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
         {
-            string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
-
-            try
-            {
-                if (this._isFirst)
-                    //lock (lockObject)
-                    {
-                        if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
-                        {
-                            Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
-
-                            if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
-                                return attribute.IsEncrypt ? attribute.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
-                            else
-                                return "";
-                        }
-
-                        HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
-                        {
-                            Headers = {
-                        { HeaderNames.Accept, "text/plain" },
-                        { "token", Factory.ProjectService.Token },
-                    }
-                        };
-
-                        HttpResponseMessage httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
-
-                        if (httpResponseMessage.IsSuccessStatusCode)
-                        {
-                            AssemblyAttribute? assemblyAttribute;
-                            assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
-
-                            if (assemblyAttribute != null)
-                            {
-                                if (!this._cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
-                                    Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
-
-                                Factory.SaveInstance(assemblyAttribute, path);
-
-                                return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
-                            }
-                        }
-
-                        this._isFirst = false;
-                    }
-                else
-                {
-                    //lock (lockObject)
-                        return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
-                }
-            }
-            catch (Exception ex)
-            {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception : {namespaceName}", namespaceName);
-
-                if (!this._cache.TryAdd(namespaceName, Factory.LoadInstance<AssemblyAttribute>(path)) && Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttribute Exception TryAdd Fail : {namespaceName}", namespaceName);
-            }
-
-            return "";
+            return this.GetAttributeRunAsync(namespaceName, attributeName, true).GetAwaiter().GetResult();
         }
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
+        {
+            return await this.GetAttributeRunAsync(namespaceName, attributeName, false);
+        }
+        async Task<string> GetAttributeRunAsync(string namespaceName, string attributeName, bool isResult)
         {
             string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
 
@@ -169,12 +112,21 @@ namespace MetaFrm.Config
                     }
                 };
 
-                HttpResponseMessage httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
+                HttpResponseMessage httpResponseMessage;
+
+                if (isResult)
+                    httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
+                else
+                    httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
 
                 if (httpResponseMessage.IsSuccessStatusCode)
                 {
                     AssemblyAttribute? assemblyAttribute;
-                    assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
+
+                    if (isResult)
+                        assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
+                    else
+                        assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
 
                     if (assemblyAttribute != null)
                     {
