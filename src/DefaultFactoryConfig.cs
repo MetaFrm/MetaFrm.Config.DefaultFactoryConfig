@@ -15,7 +15,7 @@ namespace MetaFrm.Config
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
-        private readonly ConcurrentDictionary<string, AssemblyAttribute> _cache = [];
+        private ConcurrentDictionary<string, AssemblyAttribute> _cache = [];
 
         /// <summary>
         /// DefaultFactoryConfig 인스턴스를 생성합니다.
@@ -23,14 +23,28 @@ namespace MetaFrm.Config
         public DefaultFactoryConfig() { }
 
 
-        string IFactoryConfig.GetAttribute(ICore core, string attributeName) => ((IFactoryConfig)this).GetAttributeAsync(core.GetType().FullName!, attributeName).GetAwaiter().GetResult();
+        string IFactoryConfig.GetAttribute(ICore core, string attributeName)
+        {
+            return (this as IFactoryConfig).GetAttribute(core.GetType().FullName!, attributeName);
+        }
+        async Task<string> IFactoryConfig.GetAttributeAsync(ICore core, string attributeName)
+        {
+            return await (this as IFactoryConfig).GetAttributeAsync(core.GetType().FullName!, attributeName);
+        }
 
-        async Task<string> IFactoryConfig.GetAttributeAsync(ICore core, string attributeName) => await ((IFactoryConfig)this).GetAttributeAsync(core.GetType().FullName!, attributeName);
 
+        string IFactoryConfig.GetAttribute<T>(ICore core, string attributeName)
+        {
+            Type type = core.GetType();
 
-        string IFactoryConfig.GetAttribute<T>(ICore core, string attributeName) => ((IFactoryConfig)this).GetAttributeAsync(core.GetType().FullName + "[{0}]", attributeName).GetAwaiter().GetResult();
+            return (this as IFactoryConfig).GetAttribute($"{type.Namespace}.{type.Name}" + "[{0}]", attributeName);
+        }
+        async Task<string> IFactoryConfig.GetAttributeAsync<T>(ICore core, string attributeName)
+        {
+            Type type = core.GetType();
 
-        async Task<string> IFactoryConfig.GetAttributeAsync<T>(ICore core, string attributeName) => await ((IFactoryConfig)this).GetAttributeAsync(core.GetType().FullName + "[{0}]", attributeName);
+            return await (this as IFactoryConfig).GetAttributeAsync($"{type.Namespace}.{type.Name}" + "[{0}]", attributeName);
+        }
 
 
         List<string> IFactoryConfig.GetAttribute(ICore core, List<string> listAttributeName)
@@ -78,60 +92,23 @@ namespace MetaFrm.Config
             lock (lockObject)
                 return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
         }
-
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
-        {
-            var assemblyAttribute = await this.GetOrLoadAssemblyAttributeAsync(namespaceName);
-
-            if (assemblyAttribute == null)
-                return string.Empty;
-
-            var attr = assemblyAttribute.Attribute.FirstOrDefault(x => x.AttributeName == attributeName);
-
-            if (attr?.AttributeValue is null or "") return string.Empty;
-
-            return attr.IsEncrypt ? await attr.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm") : attr.AttributeValue;
-        }
-
-
-        private async Task<AssemblyAttribute?> GetOrLoadAssemblyAttributeAsync(string namespaceName)
-        {
-            try
-            {
-                if (_cache.TryGetValue(namespaceName, out AssemblyAttribute? assemblyAttribute) && assemblyAttribute != null)
-                    return assemblyAttribute;
-
-                assemblyAttribute = await this.LoadAssemblyAttributeAsync(namespaceName);
-
-                if (assemblyAttribute != null)
-                {
-                    if (!_cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
-                        Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
-
-                    return assemblyAttribute;
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _cache.TryRemove(namespaceName, out _);
-
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig load failed: {namespaceName}", namespaceName);
-
-                return null;
-            }
-        }
-
-        private async Task<AssemblyAttribute?> LoadAssemblyAttributeAsync(string namespaceName)
         {
             string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
 
-            //API 시도
             try
             {
-                using HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
+                if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
+                {
+                    Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
+
+                    if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
+                        return attribute.IsEncrypt ? await attribute.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
+                    else
+                        return "";
+                }
+
+                HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
                 {
                     Headers = {
                         { HeaderNames.Accept, "text/plain" },
@@ -143,35 +120,33 @@ namespace MetaFrm.Config
 
                 if (httpResponseMessage.IsSuccessStatusCode)
                 {
-                    var data = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
+                    AssemblyAttribute? assemblyAttribute;
+                    assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
 
-                    if (data != null)
+                    if (assemblyAttribute != null)
                     {
-                        await Factory.SaveInstanceAsync(data, path);
-                        return data;
+                        if (!this._cache.TryAdd(namespaceName, assemblyAttribute))
+                            Factory.Logger.LogError("IFactoryConfig.GetAttributeAsync Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
+                        await Factory.SaveInstanceAsync(assemblyAttribute, path);
+
+                        return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
                     }
                 }
             }
             catch (Exception ex)
             {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig API load failed: {namespaceName}", namespaceName);
+                Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception : {namespaceName}", namespaceName);
+                if (!this._cache.TryAdd(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path)))
+                    Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception TryAdd Fail : {namespaceName}", namespaceName);
             }
 
-            //File fallback
-            try
-            {
-                return await Factory.LoadInstanceAsync<AssemblyAttribute>(path);
-            }
-            catch (Exception ex)
-            {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig file load failed: {namespaceName}", namespaceName);
-            }
-
-            return null;
+            return "";
         }
 
-        string IFactoryConfig.GetPath(string namespaceName) => $"{Factory.BaseAddress}api/AssemblyAttribute?fullNamespace={namespaceName}";
+        string IFactoryConfig.GetPath(string namespaceName)
+        {
+            return $"{Factory.BaseAddress}api/AssemblyAttribute?fullNamespace={namespaceName}";
+        }
     }
 }
