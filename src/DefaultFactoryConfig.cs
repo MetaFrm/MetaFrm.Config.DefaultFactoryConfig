@@ -11,6 +11,7 @@ namespace MetaFrm.Config
     /// </summary>
     public class DefaultFactoryConfig : IFactoryConfig
     {
+        static readonly Lock lockObject = new();
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
@@ -72,7 +73,11 @@ namespace MetaFrm.Config
         }
 
 
-        string IFactoryConfig.GetAttribute(string namespaceName, string attributeName) => (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
+        string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
+        {
+            lock (lockObject)
+                return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
+        }
 
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
         {
