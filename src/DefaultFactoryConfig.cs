@@ -88,7 +88,7 @@ namespace MetaFrm.Config
             try
             {
                 if (this._isFirst)
-                    lock (lockObject)
+                    //lock (lockObject)
                     {
                         if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
                         {
@@ -130,7 +130,7 @@ namespace MetaFrm.Config
                     }
                 else
                 {
-                    lock (lockObject)
+                    //lock (lockObject)
                         return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
                 }
             }
