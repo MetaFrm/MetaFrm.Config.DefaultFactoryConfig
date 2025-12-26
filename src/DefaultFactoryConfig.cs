@@ -15,7 +15,7 @@ namespace MetaFrm.Config
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
-        private readonly ConcurrentDictionary<string, Lazy<Task<AssemblyAttribute?>>> _cache = [];
+        private readonly ConcurrentDictionary<string, AssemblyAttribute> _cache = [];
 
         /// <summary>
         /// DefaultFactoryConfig 인스턴스를 생성합니다.
@@ -96,11 +96,22 @@ namespace MetaFrm.Config
 
         private async Task<AssemblyAttribute?> GetOrLoadAssemblyAttributeAsync(string namespaceName)
         {
-            var lazy = _cache.GetOrAdd(namespaceName, ns => new Lazy<Task<AssemblyAttribute?>>(() => LoadAssemblyAttributeAsync(ns)));
-
             try
             {
-                return await lazy.Value;
+                if (_cache.TryGetValue(namespaceName, out AssemblyAttribute? assemblyAttribute) && assemblyAttribute != null)
+                    return assemblyAttribute;
+
+                assemblyAttribute = await this.LoadAssemblyAttributeAsync(namespaceName);
+
+                if (assemblyAttribute != null)
+                {
+                    if (!_cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
+                        Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
+
+                    return assemblyAttribute;
+                }
+
+                return null;
             }
             catch (Exception ex)
             {
