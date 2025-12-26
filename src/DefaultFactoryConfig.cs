@@ -23,14 +23,8 @@ namespace MetaFrm.Config
         public DefaultFactoryConfig() { }
 
 
-        string IFactoryConfig.GetAttribute(ICore core, string attributeName)
-        {
-            return (this as IFactoryConfig).GetAttribute(core.GetType().FullName!, attributeName);
-        }
-        async Task<string> IFactoryConfig.GetAttributeAsync(ICore core, string attributeName)
-        {
-            return await (this as IFactoryConfig).GetAttributeAsync(core.GetType().FullName!, attributeName);
-        }
+        string IFactoryConfig.GetAttribute(ICore core, string attributeName) => (this as IFactoryConfig).GetAttribute(core.GetType().FullName!, attributeName);
+        async Task<string> IFactoryConfig.GetAttributeAsync(ICore core, string attributeName) => await (this as IFactoryConfig).GetAttributeAsync(core.GetType().FullName!, attributeName);
 
 
         string IFactoryConfig.GetAttribute<T>(ICore core, string attributeName)
@@ -86,50 +80,58 @@ namespace MetaFrm.Config
             return vs;
         }
 
-
+        private bool _isFirst = true;
         string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
         {
             string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
 
             try
             {
-                lock (lockObject)
-                {
-                    if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
+                if (_isFirst)
+                    lock (lockObject)
                     {
-                        Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
+                        if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
+                        {
+                            Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
 
-                        if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
-                            return attribute.IsEncrypt ? attribute.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
-                        else
-                            return "";
-                    }
+                            if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
+                                return attribute.IsEncrypt ? attribute.AttributeValue.AesDecryptorToBase64String(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
+                            else
+                                return "";
+                        }
 
-                    HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
-                    {
-                        Headers = {
+                        HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
+                        {
+                            Headers = {
                         { HeaderNames.Accept, "text/plain" },
                         { "token", Factory.ProjectService.Token },
                     }
-                    };
+                        };
 
-                    HttpResponseMessage httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
+                        HttpResponseMessage httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
 
-                    if (httpResponseMessage.IsSuccessStatusCode)
-                    {
-                        AssemblyAttribute? assemblyAttribute;
-                        assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
-
-                        if (assemblyAttribute != null)
+                        if (httpResponseMessage.IsSuccessStatusCode)
                         {
-                            if (!this._cache.TryAdd(namespaceName, assemblyAttribute))
-                                Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
+                            AssemblyAttribute? assemblyAttribute;
+                            assemblyAttribute = httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().Result;
 
-                            Factory.SaveInstance(assemblyAttribute, path);
+                            if (assemblyAttribute != null)
+                            {
+                                if (!this._cache.TryAdd(namespaceName, assemblyAttribute))
+                                    Factory.Logger.LogError("IFactoryConfig.GetAttribute Attribute TryAdd Fail : {namespaceName}", namespaceName);
 
-                            return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
+                                Factory.SaveInstance(assemblyAttribute, path);
+
+                                return ((IFactoryConfig)this).GetAttribute(namespaceName, attributeName);
+                            }
                         }
+
+                        this._isFirst = false;
                     }
+                else
+                {
+                    lock (lockObject)
+                        return (this as IFactoryConfig).GetAttributeAsync(namespaceName, attributeName).GetAwaiter().GetResult();
                 }
             }
             catch (Exception ex)
