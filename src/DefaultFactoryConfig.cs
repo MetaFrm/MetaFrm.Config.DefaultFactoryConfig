@@ -136,15 +136,15 @@ namespace MetaFrm.Config
 
                 HttpResponseMessage httpResponseMessage;
 
-                httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
+                httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).ConfigureAwait(false);
 
                 if (httpResponseMessage.IsSuccessStatusCode)
                 {
-                    var data = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
+                    var data = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>().ConfigureAwait(false);
 
                     if (data != null)
                     {
-                        await Factory.SaveInstanceAsync(data, path);
+                        await Factory.SaveInstanceAsync(data, path).ConfigureAwait(false);
 
                         return data;
                     }
@@ -159,7 +159,7 @@ namespace MetaFrm.Config
             //File fallback
             try
             {
-                return await Factory.LoadInstanceAsync<AssemblyAttribute>(path);
+                return await Factory.LoadInstanceAsync<AssemblyAttribute>(path).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
