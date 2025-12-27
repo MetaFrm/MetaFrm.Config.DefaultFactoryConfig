@@ -107,7 +107,7 @@ namespace MetaFrm.Config
 
             try
             {
-                return await lazy.Value;
+                return await lazy.Value.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
