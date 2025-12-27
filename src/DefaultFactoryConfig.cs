@@ -11,7 +11,6 @@ namespace MetaFrm.Config
     /// </summary>
     public class DefaultFactoryConfig : IFactoryConfig
     {
-        static readonly Lock lockObject = new();
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
@@ -82,95 +81,29 @@ namespace MetaFrm.Config
 
         string IFactoryConfig.GetAttribute(string namespaceName, string attributeName)
         {
-            return this.GetAttributeRun1Async(namespaceName, attributeName, true).GetAwaiter().GetResult();
+            return this.GetAttributeRunAsync(namespaceName, attributeName).GetAwaiter().GetResult();
         }
         async Task<string> IFactoryConfig.GetAttributeAsync(string namespaceName, string attributeName)
         {
-            //return await this.GetAttributeRunAsync(namespaceName, attributeName, false);
-            return await this.GetAttributeRun1Async(namespaceName, attributeName, false);
-        }
-        async Task<string> GetAttributeRunAsync(string namespaceName, string attributeName, bool isResult)
-        {
-            //string path = Path.Combine(Factory.FolderPathDat, $"{Factory.ProjectServiceBase.ProjectID}_{Factory.ProjectServiceBase.ServiceID}_C_{namespaceName}_Attribute.dat");
-
-            //try
-            //{
-            //    if (this._cache.TryGetValue(namespaceName, out AssemblyAttribute? value1))
-            //    {
-            //        Api.Models.Attribute? attribute = value1.Attribute.SingleOrDefault(x => x.AttributeName == attributeName);
-
-            //        if (attribute != null && attribute.AttributeValue != null && attribute.AttributeValue != "")
-            //            return attribute.IsEncrypt ? await attribute.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm") : attribute.AttributeValue;
-            //        else
-            //            return "";
-            //    }
-
-            //    HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
-            //    {
-            //        Headers = {
-            //            { HeaderNames.Accept, "text/plain" },
-            //            { "token", Factory.ProjectService.Token },
-            //        }
-            //    };
-
-            //    HttpResponseMessage httpResponseMessage;
-
-            //    if (isResult)
-            //        httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
-            //    else
-            //        httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
-
-            //    if (httpResponseMessage.IsSuccessStatusCode)
-            //    {
-            //        AssemblyAttribute? assemblyAttribute;
-
-            //        assemblyAttribute = await httpResponseMessage.Content.ReadFromJsonAsync<AssemblyAttribute>();
-
-            //        if (assemblyAttribute != null)
-            //        {
-            //            if (!this._cache.TryAdd(namespaceName, assemblyAttribute) && Factory.Logger.IsEnabled(LogLevel.Error))
-            //                Factory.Logger.LogError("IFactoryConfig.GetAttributeAsync Attribute TryAdd Fail : {namespaceName}", namespaceName);
-
-            //            await Factory.SaveInstanceAsync(assemblyAttribute, path);
-
-            //            return await ((IFactoryConfig)this).GetAttributeAsync(namespaceName, attributeName);
-            //        }
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    if (Factory.Logger.IsEnabled(LogLevel.Error))
-            //        Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception : {namespaceName}", namespaceName);
-
-            //    if (!this._cache.TryAdd(namespaceName, await Factory.LoadInstanceAsync<AssemblyAttribute>(path)) && Factory.Logger.IsEnabled(LogLevel.Error))
-            //        Factory.Logger.LogError(ex, "IFactoryConfig.GetAttributeAsync Exception TryAdd Fail : {namespaceName}", namespaceName);
-            //}
-
-            return "";
+            return await this.GetAttributeRunAsync(namespaceName, attributeName);
         }
 
-        async Task<string> GetAttributeRun1Async(string namespaceName, string attributeName, bool isResult)
+        async Task<string> GetAttributeRunAsync(string namespaceName, string attributeName)
         {
-            var assembly = await this.GetOrLoadAsync(namespaceName, isResult);
+            AssemblyAttribute? assembly = await this.GetOrLoadAsync(namespaceName).ConfigureAwait(false);
 
-            if (assembly == null)
-                return string.Empty;
+            if (assembly == null) return string.Empty;
 
-            var attr = assembly.Attribute
-                .FirstOrDefault(x => x.AttributeName == attributeName);
+            Api.Models.Attribute? attr = assembly.Attribute.FirstOrDefault(x => x.AttributeName == attributeName);
 
-            if (attr?.AttributeValue is null or "")
-                return string.Empty;
+            if (attr?.AttributeValue is null or "") return string.Empty;
 
-            return attr.IsEncrypt
-                ? await attr.AttributeValue
-                    .AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm")
-                : attr.AttributeValue;
+            return attr.IsEncrypt ? await attr.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm").ConfigureAwait(false) : attr.AttributeValue;
         }
 
-        private async Task<AssemblyAttribute?> GetOrLoadAsync(string namespaceName, bool isResult)
+        private async Task<AssemblyAttribute?> GetOrLoadAsync(string namespaceName)
         {
-            var lazy = _cache.GetOrAdd(namespaceName, ns => new Lazy<Task<AssemblyAttribute?>>(() => this.LoadAsync(ns, isResult)));
+            var lazy = this._cache.GetOrAdd(namespaceName, ns => new Lazy<Task<AssemblyAttribute?>>(() => this.LoadAsync(ns)));
 
             try
             {
@@ -178,7 +111,7 @@ namespace MetaFrm.Config
             }
             catch (Exception ex)
             {
-                _cache.TryRemove(namespaceName, out _);
+                this._cache.TryRemove(namespaceName, out _);
 
                 if (Factory.Logger.IsEnabled(LogLevel.Error))
                     Factory.Logger.LogError(ex, "FactoryConfig load failed: {namespaceName}", namespaceName);
@@ -186,11 +119,11 @@ namespace MetaFrm.Config
                 return null;
             }
         }
-        private async Task<AssemblyAttribute?> LoadAsync(string namespaceName, bool isResult)
+        private async Task<AssemblyAttribute?> LoadAsync(string namespaceName)
         {
             string path = GetCachePath(namespaceName);
 
-            // 1️⃣ API
+            //API
             try
             {
                 using HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
@@ -203,10 +136,7 @@ namespace MetaFrm.Config
 
                 HttpResponseMessage httpResponseMessage;
 
-                if (isResult)
-                    httpResponseMessage = Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage).Result;
-                else
-                    httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
+                httpResponseMessage = await Factory.HttpClientFactory.CreateClient().SendAsync(httpRequestMessage);
 
                 if (httpResponseMessage.IsSuccessStatusCode)
                 {
@@ -223,18 +153,18 @@ namespace MetaFrm.Config
             catch (Exception ex)
             {
                 if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "IFactoryConfig API load failed: {namespaceName}", namespaceName);
+                    Factory.Logger.LogError(ex, "FactoryConfig API load failed: {namespaceName}", namespaceName);
             }
 
-            // 2️⃣ File fallback
+            //File fallback
             try
             {
                 return await Factory.LoadInstanceAsync<AssemblyAttribute>(path);
             }
             catch (Exception ex)
             {
-                Factory.Logger.LogError(ex,
-                    "IFactoryConfig file load failed: {namespaceName}", namespaceName);
+                if (Factory.Logger.IsEnabled(LogLevel.Error))
+                    Factory.Logger.LogError(ex, "FactoryConfig file load failed: {namespaceName}", namespaceName);
             }
 
             return null;
