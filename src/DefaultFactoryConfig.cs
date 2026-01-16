@@ -136,7 +136,7 @@ namespace MetaFrm.Config
                     }
                 };
 
-                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Factory.ProjectService.DeployToken);
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Factory.ProjectService.Token);
 
                 HttpResponseMessage httpResponseMessage;
 
