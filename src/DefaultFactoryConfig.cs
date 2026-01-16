@@ -1,8 +1,11 @@
-﻿using MetaFrm.Api.Models;
+﻿using MetaFrm.Api;
+using MetaFrm.Api.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Concurrent;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Mime;
 
 namespace MetaFrm.Config
 {
@@ -129,10 +132,11 @@ namespace MetaFrm.Config
                 using HttpRequestMessage httpRequestMessage = new(HttpMethod.Get, ((IFactoryConfig)this).GetPath(namespaceName))
                 {
                     Headers = {
-                        { HeaderNames.Accept, "text/plain" },
-                        { "token", Factory.ProjectService.Token },
+                        { HeaderNames.Accept, MediaTypeNames.Application.Json },
                     }
                 };
+
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Factory.ProjectService.DeployToken);
 
                 HttpResponseMessage httpResponseMessage;
 
@@ -172,7 +176,7 @@ namespace MetaFrm.Config
 
         string IFactoryConfig.GetPath(string namespaceName)
         {
-            return $"{Factory.BaseAddress}api/AssemblyAttribute?fullNamespace={namespaceName}";
+            return $"{Factory.BaseAddress}api/{Factory.ApiVersion}/AssemblyAttribute?fullNamespace={namespaceName}";
         }
 
         private static string GetCachePath(string namespaceName)
