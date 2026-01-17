@@ -14,6 +14,8 @@ namespace MetaFrm.Config
     /// </summary>
     public class DefaultFactoryConfig : IFactoryConfig
     {
+        internal static string IV { get; } = (typeof(Factory).FullName ?? "").Split('.')[0];
+
         /// <summary>
         /// 키와 값의 컬렉션을 나타냅니다.
         /// </summary>
@@ -101,7 +103,7 @@ namespace MetaFrm.Config
 
             if (attr?.AttributeValue is null or "") return string.Empty;
 
-            return attr.IsEncrypt ? await attr.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, "MetaFrm").ConfigureAwait(false) : attr.AttributeValue;
+            return attr.IsEncrypt ? await attr.AttributeValue.AesDecryptorToBase64StringAsync(Factory.AccessKey, IV).ConfigureAwait(false) : attr.AttributeValue;
         }
 
         private async Task<AssemblyAttribute?> GetOrLoadAsync(string namespaceName)
@@ -136,7 +138,7 @@ namespace MetaFrm.Config
                     }
                 };
 
-                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Factory.ProjectService.Token);
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(Headers.Bearer, Factory.ProjectService.Token);
 
                 HttpResponseMessage httpResponseMessage;
 
