@@ -1,6 +1,5 @@
 ﻿using MetaFrm.Api;
 using MetaFrm.Api.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Concurrent;
 using System.Net.Http.Headers;
@@ -118,8 +117,7 @@ namespace MetaFrm.Config
             {
                 this._cache.TryRemove(namespaceName, out _);
 
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig load failed: {namespaceName}", namespaceName);
+                Factory.Logger.Error(ex, "FactoryConfig load failed: {0}", namespaceName);
 
                 return null;
             }
@@ -158,8 +156,7 @@ namespace MetaFrm.Config
             }
             catch (Exception ex)
             {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig API load failed: {namespaceName}", namespaceName);
+                Factory.Logger.Error(ex, "FactoryConfig API load failed: {0}", namespaceName);
             }
 
             //File fallback
@@ -169,8 +166,7 @@ namespace MetaFrm.Config
             }
             catch (Exception ex)
             {
-                if (Factory.Logger.IsEnabled(LogLevel.Error))
-                    Factory.Logger.LogError(ex, "FactoryConfig file load failed: {namespaceName}", namespaceName);
+                Factory.Logger.Error(ex, "FactoryConfig file load failed: {0}", namespaceName);
             }
 
             return null;
